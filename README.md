@@ -1,7 +1,5 @@
 # Multi-Cloud-Analysis-Dashboard
 
-# 🌥️ Cloud Cost Analysis Dashboard
-
 ## Overview
 
 The **Cloud Cost Analysis Dashboard** is a dynamic, web-based GUI developed in Python using the open-source [Panel](https://panel.holoviz.org/) library. It enables users to perform interactive multi-cloud pricing comparisons,across AWS, Azure, and GCP. This tool simplifies complex cloud pricing analysis by providing real-time access to instance configurations, pricing models, and region-specific cost summaries—all within a unified interface.
