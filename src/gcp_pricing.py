@@ -53,7 +53,7 @@ def fetch_gcp_pricing(instance_type: str, region: str, cpu: int, ram: float):
         skus.extend(response.get('skus', []))
         request = service.services().skus().list_next(previous_request=request, previous_response=response)
 
-    print(f"✅ Total SKUs fetched: {len(skus)}")
+    print(f" Total SKUs fetched: {len(skus)}")
 
     results = {
         "OnDemand": {},

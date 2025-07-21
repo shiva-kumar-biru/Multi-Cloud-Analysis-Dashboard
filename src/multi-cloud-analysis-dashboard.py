@@ -34,6 +34,8 @@ pn.extension()
 # ============================
 # Global Constants and State
 # ============================
+
+## Note : Please chnage the gcp_project_id and the gcp_service_account_file , This you have to setup in the GCP console 
 gcp_project_id = "my-test-project-461610"
 gcp_service_account_file = "/Users/shivakumarbiru/Downloads/my-test-project-461610-9168517f59d4.json"
 
@@ -187,10 +189,10 @@ def get_exact_instance_types(region, exact_vcpus, exact_memory_gib):
     size_kb = sys.getsizeof(json_blob) / 1024
     size_mb = size_kb / 1024
 
-    print(f"\n🌍 AWS instance type fetch")
-    print(f"🔢 Instance types fetched: {len(all_data)}")
-    print(f"📦 Data size: {size_kb:.2f} KB (~{size_mb:.2f} MB)")
-    print(f"⏱️ Time taken: {elapsed:.2f} seconds")
+    print(f"\n AWS instance type fetch")
+    print(f" Instance types fetched: {len(all_data)}")
+    print(f" Data size: {size_kb:.2f} KB (~{size_mb:.2f} MB)")
+    print(f" Time taken: {elapsed:.2f} seconds")
 
     matching_types = []
     for itype in all_data:
@@ -207,7 +209,7 @@ def get_matching_azure_vm_sizes(region: str, required_cores: int, required_memor
     global cached_azure_skus
 
     if not cached_azure_skus:
-        print("❗ Azure SKUs not cached. Fetching now...")
+        print(" Azure SKUs not cached. Fetching now...")
         client = ComputeManagementClient(
             credential=DefaultAzureCredential(),
             subscription_id=subscription_id,
@@ -216,7 +218,7 @@ def get_matching_azure_vm_sizes(region: str, required_cores: int, required_memor
 
     skus = cached_azure_skus
 
-    # ⏱️ Start timer AFTER cache load
+    #  Start timer AFTER cache load
     start = time.time()
 
     matching_vms = []
@@ -237,9 +239,9 @@ def get_matching_azure_vm_sizes(region: str, required_cores: int, required_memor
             matching_vms.append(sku.name)
 
     elapsed = time.time() - start
-    print(f"\n🛰️ Azure VM size match complete")
-    print(f"🔢 Matched VM sizes: {len(matching_vms)}")
-    print(f"⏱️ Matching time: {elapsed:.2f} seconds")
+    print(f"\n Azure VM size match complete")
+    print(f" Matched VM sizes: {len(matching_vms)}")
+    print(f" Matching time: {elapsed:.2f} seconds")
 
     return matching_vms
 
@@ -261,10 +263,10 @@ def get_matching_gcp_vm_types(region, vcpus_required, memory_required_gb):
     size_kb = sys.getsizeof(json_blob) / 1024
     size_mb = size_kb / 1024
 
-    print(f"\n☁️ GCP machine type fetch")
-    print(f"🔢 Machine types fetched: {len(machine_types)}")
-    print(f"📦 Data size: {size_kb:.2f} KB (~{size_mb:.2f} MB)")
-    print(f"⏱️ Time taken: {elapsed:.2f} seconds")
+    print(f"\n GCP machine type fetch")
+    print(f" Machine types fetched: {len(machine_types)}")
+    print(f" Data size: {size_kb:.2f} KB (~{size_mb:.2f} MB)")
+    print(f" Time taken: {elapsed:.2f} seconds")
 
     matching = []
     for mt in machine_types:
@@ -459,7 +461,7 @@ def update_pricing_models_for_instance(event):
 
             result_display.object = f"### Fetching Azure pricing for {selected_instance} in {region_internal}..."
             azure_data, azure_pricing_labels = fetch_azure_pricing(sku=selected_instance, region=region_internal)
-            print(f"🧩 Azure pricing labels: {azure_pricing_labels}")  # DEBUG LINE
+            print(f" Azure pricing labels: {azure_pricing_labels}")  # DEBUG LINE
             pricing_model_selector.options = list(azure_data.keys())
             result_display.object = f"### Found {len(azure_data)} pricing models for {selected_instance} in {region_internal}"
 
@@ -515,7 +517,7 @@ def update_pricing_models(cloud_selection):
             cached_region_name_map = get_static_aws_region_name_map()
 
             result_display.object = "### ✅ AWS regions loaded. Please select a region."
-            print("🗺️ Cached AWS Region Name Map:")
+            print(" Cached AWS Region Name Map:")
             for code, name in cached_region_name_map.items():
                 print(f"{code} → {name}")
 
@@ -579,7 +581,7 @@ def on_region_selected(event):
 
 def on_pricing_model_selected(event):
     selected = list(event.new)
-    print(f"🎯 Selected models: {selected}")  # DEBUG LINE
+    print(f" Selected models: {selected}")  # DEBUG LINE
     if not selected:
         result_display.object = "### No pricing model selected."
     else:
@@ -686,7 +688,7 @@ def compare_prices(event=None):
     new_df = pd.DataFrame(rows)
     pricing_df = pd.concat([pricing_df, new_df], ignore_index=True).drop_duplicates(subset=["Model", "Cloud", "Region"])
 
-    print("📊 Multi-Cloud Pricing DataFrame:")
+    print(" Multi-Cloud Pricing DataFrame:")
     print(pricing_df)
 
     # Create Bokeh bar chart
@@ -724,8 +726,8 @@ def update_cloud_comparison(event=None):
     ]
 
     # 🧪 Optional debug print
-    print(f"🔍 Selection: {selection}")
-    print(f"✅ Rows found: {len(df)}")
+    print(f" Selection: {selection}")
+    print(f" Rows found: {len(df)}")
     print(df[["Model", "Pricing Type Normalized"]])
 
     if df.empty:
@@ -733,7 +735,7 @@ def update_cloud_comparison(event=None):
         result_display.object = f"⚠️ No entries found for {selection}"
         return
 
-    # 📊 Plotting logic
+    #  Plotting logic
     source = ColumnDataSource(data={
         "models": df["Model"],
         "prices": df["Monthly Cost (USD)"],
