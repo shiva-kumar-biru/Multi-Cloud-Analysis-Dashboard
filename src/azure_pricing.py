@@ -43,6 +43,40 @@ def is_linux_item(item):
 
 # def fetch_azure_pricing(sku='Standard_D8as_v5', region='GermanyWestCentral'):
 def fetch_azure_pricing(sku:str, region:str):
+
+    """
+    Fetches Azure VM pricing information for a given SKU and region using the Azure Retail Prices API.
+
+    This function queries the Azure Pricing API to retrieve all pricing items for the specified
+    SKU and region, then filters and parses relevant pricing information based on operating system
+    and reservation type.
+
+    Parameters:
+    ----------
+    sku : str
+        Azure VM SKU name (e.g., "Standard_D8as_v5").
+    region : str
+        Azure region name in `armRegionName` format (e.g., "GermanyWestCentral").
+
+    Returns:
+    -------
+    Tuple[dict, dict]
+        - pricing_map: Dictionary with estimated monthly costs (per pricing model).
+        - labels_map: Dictionary containing metadata for each pricing term including:
+            - raw price
+            - term duration
+            - payment type (e.g., AllUpfront, NoUpfront)
+            - SKU
+            - region
+
+    Notes:
+    -----
+    - Only Linux-based SKUs are considered.
+    - Pricing is multiplied by 730 to estimate monthly cost.
+    - Supports models: On-Demand, Spot, Low Priority, Reserved (1YR, 3YR).
+    - Filters out Windows, Cloud Services, and non-VM entries.
+    """
+
     api_url = "https://prices.azure.com/api/retail/prices"
     query = f"armRegionName eq '{region}' and armSkuName eq '{sku}'"
     all_items = []

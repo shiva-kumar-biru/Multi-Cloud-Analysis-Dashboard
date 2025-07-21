@@ -1,116 +1,42 @@
-##################################. STATIC CODE  ########################################
-
-from googleapiclient.discovery import build
-from google.auth import default
-from collections import defaultdict
-
-def fetch_gcp_pricing(instance_type="n2-standard-4", region="us-east4"):
-    credentials, _ = default()
-    service = build('cloudbilling', 'v1', credentials=credentials)
-
-    compute_service_id = 'services/6F81-5844-456A'
-    request = service.services().skus().list(parent=compute_service_id) #lists all available SKUs under Compute Engine. GET https://cloudbilling.googleapis.com/v1/services/SERVICE_ID/skus?key=<var>API_KEY</var>
-    skus = []
-    while request is not None:
-        response = request.execute()
-        skus.extend(response.get('skus', []))
-        request = service.services().skus().list_next(previous_request=request, previous_response=response)
-
-    results = {
-        "OnDemand": defaultdict(float),
-        "Spot": defaultdict(float),
-        "CUD": {"Commit1Yr": {}, "Commit3Yr": {}}
-    }
-
-    prefix = instance_type.split("-")[0].upper()
-
-    for sku in skus:
-        desc = sku.get("description", "")
-        category = sku.get("category", {})
-        pricing_info = sku.get("pricingInfo", [])
-        usage_type = category.get("usageType", "")
-        regions = sku.get("serviceRegions", [])
-
-        if prefix not in desc.upper():
-            continue
-
-        # Dynamically match only the selected region (or include 'global' SKUs if desired)
-        if not any(r in regions for r in [region, 'global']):
-            continue
-
-        if not pricing_info:
-            continue
-
-
-        tiered = pricing_info[0]['pricingExpression']['tieredRates'][0]['unitPrice']
-        try:
-            units = int(tiered.get('units', 0))
-            nanos = tiered.get('nanos', 0) / 1e9
-            price = units + nanos
-        except (TypeError, ValueError):
-            continue
-
-        if usage_type == "OnDemand" and "N2 Instance" in desc and "Sole Tenancy" not in desc and "Custom" not in desc:
-            if "Core" in desc:
-                results["OnDemand"]["core"] = price
-            elif "Ram" in desc:
-                results["OnDemand"]["ram"] = price
-        elif usage_type == "Preemptible" and "N2 Instance" in desc and "Custom" not in desc:
-            if "Core" in desc:
-                results["Spot"]["core"] = price
-            elif "Ram" in desc:
-                results["Spot"]["ram"] = price
-        elif usage_type in ["Commit1Yr", "Commit3Yr"] and "N2" in desc and ("Cpu" in desc or "Ram" in desc):
-            term = usage_type
-            if "Cpu" in desc:
-                results["CUD"][term]["core"] = price
-            elif "Ram" in desc:
-                results["CUD"][term]["ram"] = price
-
-    def combined_price(core_price, ram_price, cores=4, ram_gb=16):
-        hourly = cores * core_price + ram_gb * ram_price
-        monthly = hourly * 730
-        yearly = monthly * 12
-        return {
-            "hourly": round(hourly, 4),
-            "monthly": round(monthly, 2),
-            "yearly": round(yearly, 2)
-        }
-
-    gcp_data = {}
-    gcp_labels = {}
-
-    if "core" in results["OnDemand"] and "ram" in results["OnDemand"]:
-        price = combined_price(results["OnDemand"]["core"], results["OnDemand"]["ram"])
-        gcp_data["GCP-OnDemand"] = price
-        gcp_labels["GCP-OnDemand"] = {"term": "OnDemand", "raw_price": price["hourly"], "payment": "-", "instance_type": instance_type,
-                "region": region}
-
-    if "core" in results["Spot"] and "ram" in results["Spot"]:
-        price = combined_price(results["Spot"]["core"], results["Spot"]["ram"])
-        gcp_data["GCP-Spot"] = price
-        gcp_labels["GCP-Spot"] = {"term": "Spot", "raw_price": price["hourly"], "payment": "-","instance_type": instance_type,
-                "region": region}
-
-    for term in ["Commit1Yr", "Commit3Yr"]:
-        if "core" in results["CUD"][term] and "ram" in results["CUD"][term]:
-            price = combined_price(results["CUD"][term]["core"], results["CUD"][term]["ram"])
-            gcp_data[f"GCP-{term}"] = price
-            gcp_labels[f"GCP-{term}"] = {"term": term, "raw_price": price["hourly"], "payment": "Monthly","instance_type": instance_type,
-                       "region": region}
-
-    return gcp_data, gcp_labels
-
-
-
-
-#########################. DYNAMIC CODE #################################
 
 from googleapiclient.discovery import build
 from google.auth import default
 from collections import defaultdict
 
 def fetch_gcp_pricing(instance_type: str, region: str, cpu: int, ram: float):
+    """
+    Fetches GCP VM pricing data (On-Demand, Spot, and CUD) for a given instance type, region, CPU, and RAM configuration.
+
+    Parameters:
+    ----------
+    instance_type : str
+        The GCP instance family or type (e.g., 'n2-standard').
+    region : str
+        The GCP region (e.g., 'us-central1').
+    cpu : int
+        Number of vCPUs requested.
+    ram : float
+        Amount of memory in GB.
+
+    Returns:
+    -------
+    Tuple[dict, dict]
+        A tuple of two dictionaries:
+        - gcp_data: Aggregated pricing data by pricing model (hourly, monthly, yearly).
+        - gcp_labels: Metadata labels for display or logging, including term type and resource configuration.
+
+    Notes:
+    -----
+    - This function requires Google Cloud credentials to be authenticated in the environment.
+    - Uses Google Cloud Billing API to fetch SKU-level pricing information.
+    - Filters SKUs based on instance family, region, and usage type.
+    - Combines core and RAM pricing to produce total cost per pricing model.
+    - Supports:
+        - OnDemand
+        - Preemptible (Spot)
+        - Committed Use Discounts (1 year and 3 years)
+    """
+
     ram_gb = round(ram, 2)
     cores = int(cpu)
 

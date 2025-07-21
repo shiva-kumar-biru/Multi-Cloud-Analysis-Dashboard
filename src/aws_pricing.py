@@ -6,6 +6,39 @@ from datetime import datetime, timedelta
 HOURS_PER_MONTH = 730
 # def fetch_aws_pricing(instance_type="t3a.2xlarge", region="US East (N. Virginia)", os='Linux'):
 def fetch_aws_pricing(instance_type:str, region:str, os='Linux'):
+
+    """
+    Fetches AWS EC2 pricing for a given instance type, region, and operating system.
+
+    This function retrieves pricing information for both standard (On-Demand/Reserved) and Spot instances
+    using AWS Pricing and EC2 APIs. It returns a pricing map, labels for interpretation, raw AWS term data,
+    and historical spot price data as a DataFrame.
+
+    Parameters:
+    ----------
+    instance_type : str
+        EC2 instance type to query (e.g., "t3a.2xlarge").
+    region : str
+        AWS region name in full text format (e.g., "US East (N. Virginia)").
+    os : str, optional
+        Operating system (default is 'Linux').
+
+    Returns:
+    -------
+    Tuple[dict, dict, dict, pd.DataFrame]
+        - pricing_map: Dictionary containing pricing for different term types (e.g., OnDemand - Standard, Spot).
+        - labels_map: Dictionary describing metadata for each pricing term.
+        - raw_terms: Raw term structure as returned from AWS Pricing API.
+        - spot_df: Pandas DataFrame with spot price history for the past 7 days (timestamp, price).
+
+    Notes:
+    -----
+    - Uses AWS Pricing API (`boto3.client('pricing')`) to query On-Demand and Reserved pricing.
+    - Uses EC2 API (`boto3.client('ec2')`) to fetch Spot pricing history.
+    - Spot prices are averaged over the past 7 days.
+    - Prices are returned as monthly estimates (based on 730 hours/month).
+    """
+
     client = boto3.client('pricing', region_name='us-east-1')
     product_response = client.get_products(
         ServiceCode='AmazonEC2',
