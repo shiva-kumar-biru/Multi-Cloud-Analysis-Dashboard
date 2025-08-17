@@ -55,8 +55,8 @@ cloud_services = pn.widgets.MultiSelect(name='Select Cloud Services', options=['
 region_selector = pn.widgets.Select(name="Select Region", options=[], width=250)
 vcpu_input = pn.widgets.IntInput(name="vCPUs", width=100, step=1, start=1, disabled=True)
 ram_input = pn.widgets.FloatInput(name="Memory (GB)", width=100, step=0.5, start=1.0, disabled=True)
-instance_selector = pn.widgets.MultiSelect(name="Matching Instances", options=[], size=6)
-pricing_model_selector = pn.widgets.MultiSelect(name='Select Pricing Models', options=[], size=6)
+instance_selector = pn.widgets.MultiSelect(name="Matching Instances", options=[], size=6,height=140)
+pricing_model_selector = pn.widgets.MultiSelect(name='Select Pricing Models', options=[], size=6,height=140)
 result_display = pn.pane.Markdown("### Select pricing models to compare.")
 plot_pane = pn.pane.Bokeh()
 compare_button = pn.widgets.Button(name="Compare", button_type="primary")
@@ -528,7 +528,7 @@ def update_pricing_models(cloud_selection):
     if 'Azure' in cloud_selection:
         result_display.object = "### Fetching Azure regions..."
         try:
-            region_map = get_azure_regions(subscription_id="3678f0d5-8b1b-42cf-a148-b0d220f01c55")
+            region_map = get_azure_regions(subscription_id="57f76510-1b03-4666-a9df-9fada6e1d00e")
             cached_azure_region_name_map = region_map
             region_selector.value = None
             region_selector.options = ['-- Select a Region --'] + list(region_map.values())
